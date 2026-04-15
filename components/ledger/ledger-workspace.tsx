@@ -9,12 +9,12 @@ export function LedgerWorkspace() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-[#131313]">
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden overscroll-none bg-[#0f1218]">
       <ProStudioTopBar
         title="Ledger"
         breadcrumb={
-          <p className="font-sans text-xs font-medium uppercase tracking-widest text-[#a0a0a0]">
-            Studio / <span className="font-bold text-[#e0ccab]">Ledger</span>
+          <p className="font-sans text-xs font-medium uppercase tracking-widest text-[#6b7c99]">
+            Studio / <span className="font-bold text-[#5b8def]">Ledger</span>
           </p>
         }
         showSearch

@@ -142,6 +142,28 @@
     );
   }
 
+  /**
+   * Scrollbars hidden while scroll still works (wheel, touch, keyboard).
+   * Use on internal panels: `className="overflow-y-auto scrollbar-hide"`.
+   */
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  /** App shell: fixed viewport; children opt into overflow-y-auto + scrollbar-hide */
+  .app-scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
 }
 
 @theme inline {
@@ -193,84 +215,90 @@
 }
 
 :root {
-  /* DESIGN.md surface hierarchy */
-  --surface-dim: #131313;
-  --surface-container-lowest: #0e0e0e;
-  --surface-container-low: #1b1b1b;
-  --surface-container: #1f1f1f;
-  --surface-container-high: #2a2a2a;
-  --surface-container-highest: #353535;
-  --surface-tint: #e9c349;
-  --on-surface-variant: #c6c6c6;
-  --outline-variant: #474747;
-  --on-primary: #241a00;
+  /* SabaiTax UK — Intelligence Blue + deep slate */
+  --intel-blue: #5b8def;
+  --intel-blue-muted: #8fa3c4;
+  --intel-surface: #0f1218;
+  --intel-elevated: #121826;
 
-  --background: #0e0e0e;
-  --foreground: #ffffff;
-  --card: #141414;
-  --card-foreground: #ffffff;
-  --popover: #141414;
-  --popover-foreground: #ffffff;
-  --primary: #e9c349;
-  --primary-foreground: #0e0e0e;
-  --secondary: #1a1a1a;
-  --secondary-foreground: #ffffff;
-  --muted: #1a1a1a;
-  --muted-foreground: #c6c6c6;
-  --accent: #262626;
-  --accent-foreground: #e9c349;
+  /* DESIGN.md surface hierarchy (slate-tuned) */
+  --surface-dim: #12151c;
+  --surface-container-lowest: #0a0c10;
+  --surface-container-low: #161b24;
+  --surface-container: #1a202c;
+  --surface-container-high: #242b38;
+  --surface-container-highest: #2e3648;
+  --surface-tint: #5b8def;
+  --on-surface-variant: #8fa3c4;
+  --outline-variant: #2a3548;
+  --on-primary: #0a0c10;
+
+  --background: #0a0c10;
+  --foreground: #e8eefc;
+  --card: #121826;
+  --card-foreground: #e8eefc;
+  --popover: #121826;
+  --popover-foreground: #e8eefc;
+  --primary: #5b8def;
+  --primary-foreground: #0a0c10;
+  --secondary: #161b24;
+  --secondary-foreground: #e8eefc;
+  --muted: #161b24;
+  --muted-foreground: #8fa3c4;
+  --accent: #1e2635;
+  --accent-foreground: #7aa3f7;
   --destructive: #c53030;
-  --border: rgba(71, 71, 71, 0.2);
-  --input: rgba(71, 71, 71, 0.2);
-  --ring: #e9c349;
-  --chart-1: #e9c349;
-  --chart-2: #ffffff;
-  --chart-3: #737373;
-  --chart-4: #525252;
-  --chart-5: #404040;
+  --border: rgba(42, 53, 72, 0.55);
+  --input: rgba(42, 53, 72, 0.55);
+  --ring: #5b8def;
+  --chart-1: #5b8def;
+  --chart-2: #fca5a5;
+  --chart-3: #8fa3c4;
+  --chart-4: #4b5c78;
+  --chart-5: #2a3548;
   --radius: 0px;
-  --sidebar: #0e0e0e;
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #e9c349;
-  --sidebar-primary-foreground: #0e0e0e;
-  --sidebar-accent: #1a1a1a;
-  --sidebar-accent-foreground: #e9c349;
-  --sidebar-border: rgba(233, 195, 73, 0.25);
-  --sidebar-ring: #e9c349;
+  --sidebar: #0a0c10;
+  --sidebar-foreground: #e8eefc;
+  --sidebar-primary: #5b8def;
+  --sidebar-primary-foreground: #0a0c10;
+  --sidebar-accent: #161b24;
+  --sidebar-accent-foreground: #7aa3f7;
+  --sidebar-border: rgba(91, 141, 239, 0.22);
+  --sidebar-ring: #5b8def;
 }
 
 .dark {
-  --background: #0e0e0e;
-  --foreground: #ffffff;
-  --card: #141414;
-  --card-foreground: #ffffff;
-  --popover: #141414;
-  --popover-foreground: #ffffff;
-  --primary: #e9c349;
-  --primary-foreground: #0e0e0e;
-  --secondary: #1a1a1a;
-  --secondary-foreground: #ffffff;
-  --muted: #1a1a1a;
-  --muted-foreground: #c6c6c6;
-  --accent: #262626;
-  --accent-foreground: #e9c349;
+  --background: #0a0c10;
+  --foreground: #e8eefc;
+  --card: #121826;
+  --card-foreground: #e8eefc;
+  --popover: #121826;
+  --popover-foreground: #e8eefc;
+  --primary: #5b8def;
+  --primary-foreground: #0a0c10;
+  --secondary: #161b24;
+  --secondary-foreground: #e8eefc;
+  --muted: #161b24;
+  --muted-foreground: #8fa3c4;
+  --accent: #1e2635;
+  --accent-foreground: #7aa3f7;
   --destructive: #c53030;
-  --border: rgba(71, 71, 71, 0.2);
-  --input: rgba(71, 71, 71, 0.2);
-  --ring: #e9c349;
-  --chart-1: #e9c349;
-  --chart-2: #ffffff;
-  --chart-3: #737373;
-  --chart-4: #525252;
-  --chart-5: #404040;
-  --sidebar: #0e0e0e;
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #e9c349;
-  --sidebar-primary-foreground: #0e0e0e;
-  --sidebar-accent: #1a1a1a;
-  --sidebar-accent-foreground: #e9c349;
-  --sidebar-border: rgba(233, 195, 73, 0.25);
-  --sidebar-ring: #e9c349;
+  --border: rgba(42, 53, 72, 0.55);
+  --input: rgba(42, 53, 72, 0.55);
+  --ring: #5b8def;
+  --chart-1: #5b8def;
+  --chart-2: #fca5a5;
+  --chart-3: #8fa3c4;
+  --chart-4: #4b5c78;
+  --chart-5: #2a3548;
+  --sidebar: #0a0c10;
+  --sidebar-foreground: #e8eefc;
+  --sidebar-primary: #5b8def;
+  --sidebar-primary-foreground: #0a0c10;
+  --sidebar-accent: #161b24;
+  --sidebar-accent-foreground: #7aa3f7;
+  --sidebar-border: rgba(91, 141, 239, 0.22);
+  --sidebar-ring: #5b8def;
 }
 
 @layer base {
@@ -325,6 +353,7 @@ html {
   max-height: 100dvh !important;
   width: 100% !important;
   max-width: 100% !important;
+  overscroll-behavior: none !important;
 }
 
 body {
@@ -333,6 +362,7 @@ body {
   max-height: 100dvh !important;
   width: 100% !important;
   max-width: 100% !important;
+  overscroll-behavior: none !important;
 }
 
 *,

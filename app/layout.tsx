@@ -26,9 +26,9 @@ const playfairDisplay = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Dylan Is Sabai | Executive Summary",
+  title: "SabaiTax UK | Intelligence Command",
   description:
-    "Bare-bones financial MVP for UK creators. Ledger, Spendable Cash, HMRC sandbox.",
+    "Spendable cash, ledger, and HMRC MTD readiness for UK music creators — SabaiTax UK.",
 };
 
 export default async function RootLayout({

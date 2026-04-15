@@ -35,8 +35,8 @@ export function SidebarNav() {
             className={cn(
               "flex items-center gap-3 px-4 py-3 font-sans text-sm font-medium uppercase tracking-tight transition-colors duration-200",
               active
-                ? "scale-[0.98] border-r-2 border-[#e0ccab] bg-[#2a2a2a] text-[#e0ccab]"
-                : "text-[#a0a0a0] hover:bg-[#2a2a2a]"
+                ? "scale-[0.98] border-r-2 border-[#5b8def] bg-[#1e2635] text-[#e8eefc]"
+                : "text-[#6b7c99] hover:bg-[#1e2635]"
             )}
           >
             <Icon className="size-5 shrink-0" strokeWidth={1.35} aria-hidden />

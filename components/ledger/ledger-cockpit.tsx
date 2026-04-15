@@ -1,9 +1,17 @@
 "use client";
 
-import { Paperclip, Trash2 } from "lucide-react";
+import { Eye, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
+import { ReceiptDropzone } from "@/components/ledger/receipt-dropzone";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { formatGbp, spendableCash } from "@/lib/mtd-demo";
 
 const DEMO_RECEIPT_SVG =
@@ -115,9 +123,6 @@ const SEED_ENTRIES: LedgerEntry[] = [
   },
 ];
 
-const ACCEPT =
-  "image/jpeg,image/jpg,image/png,application/pdf,.pdf,.jpg,.jpeg,.png";
-
 function parseAmount(raw: string): number | null {
   const n = Number.parseFloat(raw.replace(/,/g, "").trim());
   if (Number.isNaN(n) || n < 0) return null;
@@ -148,7 +153,6 @@ export function LedgerCockpit({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [previewEntry, setPreviewEntry] = useState<LedgerEntry | null>(null);
 
-  const fileRef = useRef<HTMLInputElement>(null);
   const blobUrlsRef = useRef<string[]>([]);
 
   const descId = useId();
@@ -175,6 +179,13 @@ export function LedgerCockpit({
         e.categoryLabel.toLowerCase().includes(q)
     );
   }, [entries, searchFilter]);
+
+  const MAX_VISIBLE = 7;
+  const displayEntries = useMemo(
+    () => filteredEntries.slice(0, MAX_VISIBLE),
+    [filteredEntries]
+  );
+  const hiddenEntryCount = filteredEntries.length - displayEntries.length;
 
   const waveformEntryId = useMemo(() => {
     let best: LedgerEntry | null = null;
@@ -206,25 +217,6 @@ export function LedgerCockpit({
   const categoryLabelFor = (value: string) =>
     [...INCOME_CATEGORIES, ...EXPENSE_CATEGORIES].find((c) => c.value === value)
       ?.label ?? "General";
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) {
-      setPendingFile(null);
-      return;
-    }
-    const lower = f.name.toLowerCase();
-    const ok =
-      f.type.startsWith("image/") ||
-      f.type === "application/pdf" ||
-      [".pdf", ".jpg", ".jpeg", ".png"].some((ext) => lower.endsWith(ext));
-    if (!ok) {
-      e.target.value = "";
-      return;
-    }
-    setPendingFile(f);
-    e.target.value = "";
-  };
 
   const logEntry = () => {
     const amount = parseAmount(amountInput);
@@ -278,9 +270,9 @@ export function LedgerCockpit({
   const WAVEFORM_HEIGHTS = [20, 40, 30, 60, 20, 80, 40, 90, 20, 50, 30, 10, 70, 40];
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-4 overflow-hidden sm:gap-6">
-      <div className="grid shrink-0 grid-cols-2 gap-3 sm:gap-4">
-        <div className="border-b border-[#4d4635]/20 bg-[#1c1b1b] px-4 py-3 text-center">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-2 overflow-hidden sm:gap-3">
+      <div className="grid shrink-0 grid-cols-2 gap-2 sm:gap-3">
+        <div className="border-b border-[#4d4635]/20 bg-[#1c1b1b] px-3 py-2 text-center">
           <p className="font-sans text-[10px] font-bold uppercase tracking-widest text-[#d0c5af]">
             Running total
           </p>
@@ -292,7 +284,7 @@ export function LedgerCockpit({
             {formatGbp(netSigned)}
           </p>
         </div>
-        <div className="border-b border-[#4d4635]/20 bg-[#1c1b1b] px-4 py-3 text-center">
+        <div className="border-b border-[#4d4635]/20 bg-[#1c1b1b] px-3 py-2 text-center">
           <p className="font-sans text-[10px] font-bold uppercase tracking-widest text-[#d0c5af]">
             Spendable Cash
           </p>
@@ -302,30 +294,30 @@ export function LedgerCockpit({
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-hidden lg:grid-cols-12 lg:gap-8">
-        <div className="flex min-h-0 flex-col lg:col-span-7">
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden lg:grid-cols-12 lg:gap-5">
+        <div className="flex min-h-0 flex-col overflow-hidden lg:col-span-7">
+          <div className="mb-2 flex shrink-0 flex-wrap items-end justify-between gap-2">
             <div>
-              <h2 className="font-sans text-2xl font-bold tracking-tight text-[#e5e2e1]">
+              <h2 className="font-sans text-lg font-bold tracking-tight text-[#e5e2e1] sm:text-xl">
                 Recent Log
               </h2>
-              <p className="mt-1 font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]">
-                Real-time financial telemetry
+              <p className="mt-0.5 font-sans text-[9px] font-semibold uppercase tracking-widest text-[#99907c]">
+                Live telemetry
               </p>
             </div>
-            <span className="font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]">
-              Live sync
+            <span className="font-sans text-[9px] font-semibold uppercase tracking-widest text-[#99907c]">
+              Sync
             </span>
           </div>
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
-            <ul className="flex flex-col gap-4">
-              {filteredEntries.map((entry) => {
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <ul className="flex min-h-0 flex-1 flex-col justify-start gap-1.5 overflow-hidden">
+              {displayEntries.map((entry) => {
                 const dm = formatLedgerDayMonth(entry.dateIso);
                 const showWave = entry.id === waveformEntryId;
                 return (
                   <li key={entry.id}>
                     <div
-                      className={`relative flex flex-col gap-3 bg-[#1c1b1b] p-5 transition-colors duration-300 hover:bg-[#393939] sm:flex-row sm:items-center sm:justify-between ${
+                      className={`relative flex min-h-0 shrink-0 flex-col gap-2 bg-[#1c1b1b] p-3 transition-colors duration-300 hover:bg-[#393939] sm:flex-row sm:items-center sm:justify-between ${
                         showWave ? "overflow-hidden" : ""
                       }`}
                     >
@@ -343,32 +335,32 @@ export function LedgerCockpit({
                           ))}
                         </div>
                       ) : null}
-                      <div className="relative z-[1] flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
-                        <div className="flex shrink-0 flex-col items-center text-center sm:w-12">
-                          <span className="font-sans text-xs font-bold text-[#e5e2e1]">
+                      <div className="relative z-[1] flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                        <div className="flex shrink-0 flex-col items-center text-center sm:w-10">
+                          <span className="font-sans text-[11px] font-bold text-[#e5e2e1]">
                             {dm.day}
                           </span>
-                          <span className="font-sans text-[9px] font-bold uppercase tracking-tighter text-[#99907c]">
+                          <span className="font-sans text-[8px] font-bold uppercase tracking-tighter text-[#99907c]">
                             {dm.mon}
                           </span>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-sans text-sm font-medium tracking-tight text-[#e5e2e1]">
+                          <h3 className="truncate font-sans text-xs font-medium tracking-tight text-[#e5e2e1] sm:text-sm">
                             {entry.description}
                           </h3>
-                          <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                            <span className="bg-[#353534] px-2 py-0.5 font-sans text-[9px] font-bold uppercase tracking-widest text-[#e0ccab]">
+                          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
+                            <span className="max-w-[10rem] truncate bg-[#353534] px-1.5 py-0.5 font-sans text-[8px] font-bold uppercase tracking-widest text-[#e0ccab] sm:max-w-[12rem]">
                               {entry.categoryLabel}
                             </span>
-                            <span className="font-sans text-[9px] font-semibold uppercase tracking-widest text-[#99907c]">
-                              {entry.kind === "income" ? "Income" : "Expense"}
+                            <span className="font-sans text-[8px] font-semibold uppercase tracking-widest text-[#99907c]">
+                              {entry.kind === "income" ? "In" : "Out"}
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="relative z-[1] flex shrink-0 items-center justify-between gap-4 sm:flex-col sm:items-end sm:justify-center">
+                      <div className="relative z-[1] flex shrink-0 items-center justify-between gap-2 sm:flex-col sm:items-end sm:justify-center">
                         <span
-                          className={`font-sans text-sm font-bold tabular-nums ${
+                          className={`font-sans text-xs font-bold tabular-nums sm:text-sm ${
                             entry.kind === "income"
                               ? "text-[#e0ccab]"
                               : "text-[#ffb4ab]"
@@ -377,26 +369,26 @@ export function LedgerCockpit({
                           {entry.kind === "income" ? "+" : "−"}
                           {formatGbp(entry.amount)}
                         </span>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-0.5">
                           {entry.attachment ? (
                             <button
                               type="button"
                               onClick={() => openPreview(entry)}
-                              className="flex size-9 items-center justify-center text-[#e0ccab] hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e0ccab]/40"
-                              aria-label="View attachment"
+                              className="flex size-8 items-center justify-center text-[#5b8def] hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5b8def]/40"
+                              aria-label="Preview receipt"
                             >
-                              <Paperclip className="size-4" strokeWidth={1.5} />
+                              <Eye className="size-3.5" strokeWidth={1.5} />
                             </button>
                           ) : (
-                            <span className="size-9" aria-hidden />
+                            <span className="size-8" aria-hidden />
                           )}
                           <button
                             type="button"
                             onClick={() => removeEntry(entry.id)}
-                            className="flex size-9 items-center justify-center text-[#99907c] hover:text-[#ffb4ab] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffb4ab]/40"
+                            className="flex size-8 items-center justify-center text-[#99907c] hover:text-[#ffb4ab] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffb4ab]/40"
                             aria-label="Remove entry"
                           >
-                            <Trash2 className="size-4" strokeWidth={1.5} />
+                            <Trash2 className="size-3.5" strokeWidth={1.5} />
                           </button>
                         </div>
                       </div>
@@ -405,25 +397,31 @@ export function LedgerCockpit({
                 );
               })}
             </ul>
+            {hiddenEntryCount > 0 ? (
+              <p className="shrink-0 pt-1 font-sans text-[9px] leading-tight text-[#99907c]">
+                Showing the latest {MAX_VISIBLE} entries. Refine search or clear
+                older rows to see more without leaving this screen.
+              </p>
+            ) : null}
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-col lg:col-span-5">
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#1c1b1b] lg:sticky lg:top-0 lg:max-h-[calc(100dvh-8rem)]">
-            <div className="shrink-0 p-6 pb-2 sm:p-8 sm:pb-2">
-              <h2 className="font-sans text-xl font-bold tracking-tight text-[#e0ccab]">
+        <div className="flex min-h-0 flex-col overflow-hidden lg:col-span-5">
+          <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#1c1b1b]">
+            <div className="shrink-0 px-4 pb-1 pt-3 sm:px-5 sm:pt-4">
+              <h2 className="font-sans text-lg font-bold tracking-tight text-[#e0ccab]">
                 Add Entry
               </h2>
-              <p className="mt-1 font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]">
-                Financial input interface
+              <p className="mt-0.5 font-sans text-[9px] font-semibold uppercase tracking-widest text-[#99907c]">
+                Log income or expense
               </p>
             </div>
-            <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 pb-6 sm:px-8 sm:pb-8">
+            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-4 pb-3 sm:px-5 sm:pb-4">
               <div>
-                <label className="mb-3 block font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]">
+                <label className="mb-1.5 block font-sans text-[9px] font-semibold uppercase tracking-widest text-[#99907c]">
                   Transaction type
                 </label>
-                <div className="grid grid-cols-2 border border-[#4d4635]/10 bg-[#0e0e0e] p-1">
+                <div className="grid grid-cols-2 border border-[#4d4635]/10 bg-[#0e0e0e] p-0.5">
                   <button
                     type="button"
                     onClick={() => {
@@ -431,7 +429,7 @@ export function LedgerCockpit({
                       setKind("income");
                       setCategory(INCOME_CATEGORIES[0].value);
                     }}
-                    className={`py-2 font-sans text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                    className={`min-h-9 py-1.5 font-sans text-[9px] font-bold uppercase tracking-widest transition-colors ${
                       kind === "income"
                         ? "bg-[#2a2a2a] text-[#e0ccab]"
                         : "text-[#99907c] hover:text-[#e5e2e1]"
@@ -446,7 +444,7 @@ export function LedgerCockpit({
                       setKind("expense");
                       setCategory(EXPENSE_CATEGORIES[0].value);
                     }}
-                    className={`py-2 font-sans text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                    className={`min-h-9 py-1.5 font-sans text-[9px] font-bold uppercase tracking-widest transition-colors ${
                       kind === "expense"
                         ? "bg-[#2a2a2a] text-[#e0ccab]"
                         : "text-[#99907c] hover:text-[#e5e2e1]"
@@ -460,12 +458,12 @@ export function LedgerCockpit({
               <div>
                 <label
                   htmlFor={amountId}
-                  className="mb-2 block font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]"
+                  className="mb-1 block font-sans text-[9px] font-semibold uppercase tracking-widest text-[#99907c]"
                 >
                   Amount (GBP)
                 </label>
                 <div className="relative border-b border-[#4d4635]/30 focus-within:border-[#e0ccab]">
-                  <span className="absolute bottom-3 left-0 font-sans text-2xl font-bold text-[#e0ccab]">
+                  <span className="absolute bottom-2 left-0 font-sans text-xl font-bold text-[#e0ccab] sm:text-2xl">
                     £
                   </span>
                   <input
@@ -475,7 +473,7 @@ export function LedgerCockpit({
                     value={amountInput}
                     onChange={(e) => setAmountInput(e.target.value)}
                     placeholder="0.00"
-                    className="w-full border-0 bg-transparent py-3 pl-8 font-sans text-2xl font-bold tracking-tight text-[#e5e2e1] outline-none placeholder:text-[#4d4635]/40 focus:ring-0"
+                    className="w-full border-0 bg-transparent py-2 pl-7 font-sans text-xl font-bold tracking-tight text-[#e5e2e1] outline-none placeholder:text-[#4d4635]/40 focus:ring-0 sm:pl-8 sm:text-2xl"
                   />
                 </div>
               </div>
@@ -483,7 +481,7 @@ export function LedgerCockpit({
               <div>
                 <label
                   htmlFor={descId}
-                  className="mb-2 block font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]"
+                  className="mb-1 block font-sans text-[9px] font-semibold uppercase tracking-widest text-[#99907c]"
                 >
                   Reference / entity
                 </label>
@@ -493,14 +491,15 @@ export function LedgerCockpit({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="E.g. Beatport settlement"
-                  className="w-full border-0 border-b border-[#4d4635]/30 bg-transparent py-2 font-sans text-xs font-semibold uppercase tracking-widest text-[#e5e2e1] outline-none placeholder:text-[#4d4635]/40 focus:border-[#e0ccab] focus:ring-0"
+                  className="w-full border-0 border-b border-[#4d4635]/30 bg-transparent py-1.5 font-sans text-[11px] font-semibold uppercase tracking-wide text-[#e5e2e1] outline-none placeholder:text-[#4d4635]/40 focus:border-[#e0ccab] focus:ring-0"
                 />
               </div>
 
-              <div>
+              <div className="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-2">
+                <div>
                 <label
                   htmlFor={catId}
-                  className="mb-2 block font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]"
+                  className="mb-1 block font-sans text-[9px] font-semibold uppercase tracking-widest text-[#99907c]"
                 >
                   Category
                 </label>
@@ -508,7 +507,7 @@ export function LedgerCockpit({
                   id={catId}
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full cursor-pointer border-0 border-b border-[#4d4635]/30 bg-[#0e0e0e] px-0 py-2 font-sans text-xs text-[#e5e2e1] outline-none focus:border-[#e0ccab] focus:ring-0"
+                  className="w-full min-h-9 cursor-pointer border-0 border-b border-[#4d4635]/30 bg-[#0e0e0e] px-0 py-1.5 font-sans text-[11px] text-[#e5e2e1] outline-none focus:border-[#e0ccab] focus:ring-0"
                 >
                   {categoryOptions.map((c) => (
                     <option key={c.value} value={c.value}>
@@ -516,35 +515,36 @@ export function LedgerCockpit({
                     </option>
                   ))}
                 </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor={dateId}
+                    className="mb-1 block font-sans text-[9px] font-semibold uppercase tracking-widest text-[#99907c]"
+                  >
+                    Date
+                  </label>
+                  <input
+                    id={dateId}
+                    type="date"
+                    value={dateInput}
+                    onChange={(e) => setDateInput(e.target.value)}
+                    className="w-full min-h-9 border-0 border-b border-[#4d4635]/30 bg-[#0e0e0e] py-1.5 font-sans text-[11px] text-[#e5e2e1] outline-none focus:border-[#e0ccab] focus:ring-0"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label
-                  htmlFor={dateId}
-                  className="mb-2 block font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]"
-                >
-                  Date
-                </label>
-                <input
-                  id={dateId}
-                  type="date"
-                  value={dateInput}
-                  onChange={(e) => setDateInput(e.target.value)}
-                  className="w-full border-0 border-b border-[#4d4635]/30 bg-[#0e0e0e] py-2 font-sans text-xs text-[#e5e2e1] outline-none focus:border-[#e0ccab] focus:ring-0"
-                />
-              </div>
-
-              <div>
-                <label className="mb-3 block font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]">
+              <div className="shrink-0">
+                <label className="mb-1.5 block font-sans text-[9px] font-semibold uppercase tracking-widest text-[#99907c]">
                   Quick categories
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {QUICK_CHIPS.map((chip) => (
                     <button
                       key={chip}
                       type="button"
                       onClick={() => applyChip(chip)}
-                      className="border border-[#4d4635]/20 px-3 py-1.5 font-sans text-[9px] font-bold uppercase tracking-widest text-[#e5e2e1] transition-all duration-200 hover:bg-[#e0ccab] hover:text-[#3a2f18]"
+                      className="min-h-8 border border-[#4d4635]/20 px-2 py-1 font-sans text-[8px] font-bold uppercase tracking-widest text-[#e5e2e1] transition-all duration-200 hover:bg-[#e0ccab] hover:text-[#3a2f18] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e0ccab]"
                     >
                       {chip}
                     </button>
@@ -552,95 +552,76 @@ export function LedgerCockpit({
                 </div>
               </div>
 
-              <input
-                ref={fileRef}
-                type="file"
-                accept={ACCEPT}
-                className="sr-only"
-                onChange={handleFile}
+              <ReceiptDropzone
+                className="shrink-0"
+                file={pendingFile}
+                onFileChange={setPendingFile}
               />
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="flex min-h-10 shrink-0 items-center gap-2 self-start font-sans text-xs text-[#e0ccab] hover:underline"
-              >
-                <Paperclip className="size-4" strokeWidth={1.5} />
-                {pendingFile ? pendingFile.name : "Attach proof (optional)"}
-              </button>
 
               <button
                 type="button"
                 onClick={logEntry}
-                className="mt-auto flex min-h-12 w-full shrink-0 items-center justify-center gap-2 bg-[#e0ccab] font-sans text-xs font-bold uppercase tracking-[0.2em] text-[#3a2f18] transition-all hover:bg-[#c3b191] active:scale-[0.98]"
+                className="mt-auto flex min-h-10 w-full shrink-0 items-center justify-center bg-[#e0ccab] font-sans text-[11px] font-bold uppercase tracking-[0.18em] text-[#3a2f18] transition-all hover:bg-[#c3b191] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e0ccab]"
               >
-                <span>Log entry</span>
+                Log entry
               </button>
 
-              <div className="border-l-2 border-[#e0ccab]/20 bg-[#0e0e0e] p-4">
-                <div className="flex items-start gap-3">
-                  <span className="font-sans text-sm text-[#e0ccab]" aria-hidden>
-                    ℹ
-                  </span>
-                  <p className="font-sans text-[10px] leading-relaxed text-[#d0c5af]">
-                    Data integrity: entries stay in your session for this demo;
-                    production will sync to your vault after HMRC consent.
-                  </p>
-                </div>
+              <div className="shrink-0 border-l-2 border-[#e0ccab]/20 bg-[#0e0e0e] p-2.5">
+                <p className="line-clamp-2 font-sans text-[9px] leading-snug text-[#d0c5af]">
+                  <span className="font-semibold text-[#e0ccab]">Note:</span> Demo
+                  session only. Production syncs after HMRC consent.
+                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {preview && previewEntry ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#0E0E0E]/90 p-4"
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setPreviewEntry(null)}
-        >
-          <div
-            className="flex max-h-[85dvh] w-full max-w-lg flex-col overflow-hidden border border-[#4d4635]/15 bg-[#1c1b1b] p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-2 flex justify-between gap-3">
-              <p className="font-sans text-[10px] font-bold uppercase tracking-widest text-[#e0ccab]">
-                Proof
-              </p>
-              <button
-                type="button"
-                onClick={() => setPreviewEntry(null)}
-                className="font-sans text-[10px] font-bold uppercase tracking-widest text-[#d0c5af] hover:text-[#e5e2e1]"
-              >
-                Close
-              </button>
-            </div>
-            <p className="mb-2 truncate font-sans text-xs text-[#c6c6c6]">
-              {preview.name}
-            </p>
-            <div className="min-h-0 flex-1 overflow-hidden">
-              {preview.kind === "pdf" ? (
-                <iframe
+      <Dialog
+        open={!!previewEntry}
+        onOpenChange={(open) => {
+          if (!open) setPreviewEntry(null);
+        }}
+      >
+        <DialogContent className="max-w-lg gap-0 p-0">
+          {preview && previewEntry ? (
+            <div className="flex min-h-0 flex-col">
+              <DialogHeader>
+                <DialogTitle>Receipt preview</DialogTitle>
+                <DialogDescription>
+                  Double-check this matches your records before any HMRC submission.
+                </DialogDescription>
+                <p
+                  className="truncate pr-10 font-sans text-[11px] text-[#8fa3c4]"
                   title={preview.name}
-                  src={preview.url}
-                  className="h-full min-h-[12rem] w-full border-0 bg-[#0E0E0E]"
-                />
-              ) : (
-                <div className="relative h-full min-h-[12rem] w-full overflow-hidden">
-                  <Image
+                >
+                  {preview.name}
+                </p>
+              </DialogHeader>
+              <div className="scrollbar-hide max-h-[min(70dvh,28rem)] min-h-[12rem] overflow-y-auto px-5 pb-5">
+                {preview.kind === "pdf" ? (
+                  <iframe
+                    title={preview.name}
                     src={preview.url}
-                    alt=""
-                    fill
-                    unoptimized
-                    className="object-contain object-left-top"
-                    sizes="(max-width: 32rem) 100vw, 32rem"
+                    className="h-[min(60dvh,24rem)] w-full border border-[#2a3548] bg-[#0a0c10]"
                   />
-                </div>
-              )}
+                ) : (
+                  <div className="relative aspect-[4/3] w-full overflow-hidden border border-[#2a3548] bg-[#0a0c10]">
+                    <Image
+                      src={preview.url}
+                      alt=""
+                      fill
+                      unoptimized
+                      className="object-contain object-center"
+                      sizes="(max-width: 32rem) 100vw, 32rem"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      ) : null}
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
