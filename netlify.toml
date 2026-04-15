@@ -1,0 +1,12 @@
+# Netlify + Next.js (App Router). Dashboard: use repo root, Node 20+.
+# After first deploy, add env vars in Netlify (same names as .env.example)
+# and register https://<your-site>.netlify.app/api/hmrc/callback in HMRC Hub.
+
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
