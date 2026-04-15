@@ -1,5 +1,12 @@
 import { cookies } from "next/headers";
-import { ExternalLink, Power, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft,
+  Building2,
+  ExternalLink,
+  EyeOff,
+  Info,
+  ShieldCheck,
+} from "lucide-react";
 import Link from "next/link";
 
 type PageProps = {
@@ -17,154 +24,168 @@ export default async function HmrcAuthPage({ searchParams }: PageProps) {
   const showConnected = hmrc === "connected" || sessionConnected;
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-[#0E0E0E]">
-      <header className="shrink-0 bg-[#1B1B1B] px-4 py-3 sm:px-6 sm:py-4">
-        <h1 className="editorial-headline text-xl font-semibold text-[#FFFFFF] sm:text-2xl">
-          HMRC Auth
-        </h1>
-        <p className="mt-1 max-w-2xl font-sans text-xs leading-snug text-[#c6c6c6] sm:text-sm">
-          Income Tax MTD — connect on the real Government Gateway screen, then
-          return here. Demo-ready; tokens stay on the server.
-        </p>
-      </header>
+    <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-[#131313]">
+      <div
+        className="pointer-events-none fixed inset-0 -z-10 opacity-20"
+        aria-hidden
+      >
+        <div className="absolute -left-[10%] -top-[10%] h-[40%] w-[40%] bg-[#e0ccab]/5 blur-[120px]" />
+        <div className="absolute -bottom-[10%] -right-[10%] h-[40%] w-[40%] bg-[#bfcdff]/5 blur-[120px]" />
+      </div>
 
-      <main className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-hidden px-3 py-3 sm:gap-6 sm:px-6 sm:py-4">
+      <div className="shrink-0 px-6 pt-6 sm:px-10">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 font-sans text-xs font-semibold uppercase tracking-widest text-[#d0c5af] transition-colors hover:text-[#e0ccab]"
+        >
+          <ArrowLeft className="size-5" strokeWidth={1.25} />
+          Back to summary
+        </Link>
+      </div>
+
+      <main className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-6 sm:px-8 sm:py-10">
         {hmrc === "missing_env" ? (
           <div
-            className="w-full max-w-lg bg-[#1B1B1B] px-4 py-3 font-sans text-sm text-[#f87171] shadow-[inset_0_0_0_0.5px_rgba(248,113,113,0.35)]"
+            className="mb-6 w-full max-w-xl border border-[#ffb4ab]/30 bg-[#1c1b1b] px-4 py-3 font-sans text-sm text-[#ffb4ab]"
             role="alert"
           >
-            <p className="catalog-label text-[#f87171]">Configuration</p>
-            <p className="mt-2 text-[#c6c6c6]">
-              Add these to{" "}
-              <code className="text-[#e9c349]">.env.local</code> then restart{" "}
-              <code className="text-[#e9c349]">npm run dev</code>:
+            <p className="font-sans text-[10px] font-bold uppercase tracking-widest">
+              Configuration
             </p>
-            <p className="mt-2 break-all text-xs text-[#FFFFFF]">
+            <p className="mt-2 text-xs text-[#d0c5af]">
+              Add to <code className="text-[#e0ccab]">.env.local</code> then
+              restart dev:
+            </p>
+            <p className="mt-2 break-all text-xs text-[#e5e2e1]">
               {detail || "HMRC_CLIENT_ID, HMRC_CLIENT_SECRET, HMRC_REDIRECT_URI"}
             </p>
-            <p className="mt-2 text-xs text-[#c6c6c6]">
-              Redirect URI in HMRC Developer Hub must match exactly (e.g.{" "}
-              <code className="text-[#e9c349]">
-                http://localhost:3000/api/hmrc/callback
-              </code>
-              ).
-            </p>
           </div>
         ) : null}
 
-        {hmrc === "token_error" || hmrc === "access_denied" || hmrc === "state_mismatch" || hmrc === "invalid_callback" ? (
+        {(hmrc === "token_error" ||
+          hmrc === "access_denied" ||
+          hmrc === "state_mismatch" ||
+          hmrc === "invalid_callback") && (
           <div
-            className="w-full max-w-lg bg-[#1B1B1B] px-4 py-3 font-sans text-sm shadow-[inset_0_0_0_0.5px_rgba(248,113,113,0.35)]"
+            className="mb-6 w-full max-w-xl border border-[#ffb4ab]/30 bg-[#1c1b1b] px-4 py-3 text-sm"
             role="alert"
           >
-            <p className="catalog-label text-[#f87171]">Connection issue</p>
-            <p className="mt-2 text-[#c6c6c6]">
-              {msg || "Try Connect again. If scopes fail, check your app is subscribed to the right APIs in HMRC Developer Hub."}
+            <p className="font-sans text-[10px] font-bold uppercase tracking-widest text-[#ffb4ab]">
+              Connection issue
+            </p>
+            <p className="mt-2 text-xs text-[#d0c5af]">
+              {msg ||
+                "Try Connect again. Confirm scopes and redirect URI in HMRC Developer Hub."}
             </p>
           </div>
-        ) : null}
+        )}
 
         {showConnected ? (
-          <div className="w-full max-w-lg bg-[#142818] px-4 py-3 font-sans text-sm shadow-[inset_0_0_0_0.5px_rgba(74,222,128,0.35)]">
-            <p className="catalog-label text-[#4ade80]">Connected</p>
-            <p className="mt-2 text-[#c6c6c6]">
-              HMRC returned an access token (stored for this session demo). You
-              can call MTD Income Tax APIs from the server next.
+          <div className="mb-6 w-full max-w-xl border border-[#e0ccab]/20 bg-[#142818]/40 px-4 py-3">
+            <p className="font-sans text-[10px] font-bold uppercase tracking-widest text-[#e0ccab]">
+              Connected
+            </p>
+            <p className="mt-2 text-xs text-[#d0c5af]">
+              HMRC issued an access token (demo session). MTD Income Tax calls run
+              from the server next.
             </p>
             <Link
               href="/api/hmrc/disconnect"
-              className="catalog-label mt-3 inline-block text-[#e9c349] hover:underline"
+              className="mt-3 inline-block font-sans text-[10px] font-bold uppercase tracking-widest text-[#e0ccab] hover:underline"
             >
               Clear demo session
             </Link>
           </div>
         ) : null}
 
-        <section
-          className="hero-noir-card w-full max-w-lg px-6 py-8 text-center sm:px-10 sm:py-10"
-          aria-labelledby="hmrc-module-heading"
-        >
-          <div className="relative z-[1] flex flex-col items-center">
-            <div
-              className="flex size-16 items-center justify-center sm:size-20"
-              aria-hidden
-            >
-              <div className="flex size-full items-center justify-center shadow-[0_0_48px_rgba(233,195,73,0.55),0_0_80px_rgba(233,195,73,0.25)]">
-                <Power
-                  className="size-10 text-[#e9c349] sm:size-12"
-                  strokeWidth={1.25}
-                />
+        <div className="relative w-full max-w-xl overflow-hidden border border-[#4d4635]/15 bg-[#1c1b1b] p-8 sm:p-12">
+          <div className="absolute left-0 top-0 h-px w-full bg-gradient-to-r from-transparent via-[#e0ccab]/25 to-transparent" />
+          <div className="flex flex-col items-center text-center">
+            <div className="mb-8 border border-[#4d4635]/10 bg-[#353534] p-4">
+              <Building2
+                className="size-12 text-[#e0ccab] sm:size-14"
+                strokeWidth={1.15}
+                aria-hidden
+              />
+            </div>
+            <h1 className="font-sans text-2xl font-bold tracking-tight text-[#e5e2e1] sm:text-3xl">
+              Connect HMRC account
+            </h1>
+            <p className="mt-4 max-w-md font-sans text-sm leading-relaxed text-[#d0c5af]">
+              Authorize{" "}
+              <span className="font-medium text-[#e5e2e1]">PRO-STUDIO</span> to
+              sync Making Tax Digital Income Tax data via Government Gateway.
+              Sandbox or live is controlled by your environment.
+            </p>
+
+            <div className="mb-10 mt-8 grid w-full grid-cols-1 gap-4 text-left sm:grid-cols-2">
+              <div className="border border-[#4d4635]/10 bg-[#0e0e0e] p-4">
+                <div className="mb-2 flex items-center gap-3">
+                  <ShieldCheck
+                    className="size-[18px] shrink-0 text-[#bfcdff]"
+                    strokeWidth={1.25}
+                  />
+                  <span className="font-sans text-[10px] font-bold uppercase tracking-widest text-[#e5e2e1]">
+                    Secure protocol
+                  </span>
+                </div>
+                <p className="font-sans text-[11px] leading-normal text-[#d0c5af]">
+                  OAuth 2.0 encrypted connection via Government Gateway.
+                </p>
+              </div>
+              <div className="border border-[#4d4635]/10 bg-[#0e0e0e] p-4">
+                <div className="mb-2 flex items-center gap-3">
+                  <EyeOff
+                    className="size-[18px] shrink-0 text-[#bfcdff]"
+                    strokeWidth={1.25}
+                  />
+                  <span className="font-sans text-[10px] font-bold uppercase tracking-widest text-[#e5e2e1]">
+                    No password storage
+                  </span>
+                </div>
+                <p className="font-sans text-[11px] leading-normal text-[#d0c5af]">
+                  DIS never sees your Government Gateway password.
+                </p>
               </div>
             </div>
 
-            <h2
-              id="hmrc-module-heading"
-              className="editorial-serif-headline mt-6 text-xl tracking-[0.06em] text-[#FFFFFF] sm:text-2xl"
+            <a
+              href="/api/hmrc/authorize"
+              className="mb-6 flex w-full min-h-12 items-center justify-center gap-2 bg-[#e0ccab] px-4 py-4 font-sans text-xs font-bold uppercase tracking-widest text-[#3a2f18] transition-all hover:bg-[#c3b191] active:scale-[0.98]"
             >
-              HMRC Auth Module
-            </h2>
-
-            <p className="mt-3 font-sans text-xs leading-relaxed text-[#c6c6c6] sm:text-sm">
-              Opens the official HM Revenue & Customs sign-in (sandbox or
-              production, from your env). After you approve, you land back here
-              with a server-side token — no passwords stored in DIS.
+              <span>Connect to HMRC</span>
+              <ExternalLink className="size-[18px]" strokeWidth={1.5} />
+            </a>
+            <p className="font-sans text-[10px] font-semibold uppercase tracking-wider text-[#99907c]/80">
+              You will be redirected to the official GOV.UK sign-in.
             </p>
+          </div>
+        </div>
 
-            <div className="mt-6 w-full bg-[#0E0E0E] px-4 py-3 shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.06)]">
-              <p className="font-sans text-xs text-[#c6c6c6] sm:text-sm">
-                {showConnected
-                  ? "Session active. Use Clear demo session to try again."
-                  : "Configure .env.local, then use Connect to HMRC to run the OAuth flow."}
+        <div className="mt-8 w-full max-w-xl px-2">
+          <div className="flex items-start gap-4">
+            <Info
+              className="size-5 shrink-0 text-[#99907c]"
+              strokeWidth={1.25}
+            />
+            <div>
+              <h3 className="mb-1 font-sans text-xs font-bold uppercase tracking-widest text-[#e5e2e1]">
+                Authorization details
+              </h3>
+              <p className="font-sans text-xs leading-relaxed text-[#d0c5af]">
+                Access can last up to 18 months unless revoked. Disconnect from
+                this screen when you need a clean demo.
               </p>
             </div>
-
-            <a
-              href="/api/hmrc/authorize"
-              className="catalog-label mt-6 flex w-full min-h-12 items-center justify-center gap-2 bg-gradient-to-r from-[#1a1208] via-[#3d2f0a] to-[#e9c349] px-4 py-3 text-[#FFFFFF] shadow-[0_0_32px_rgba(233,195,73,0.35)] transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e9c349]"
-            >
-              <ExternalLink className="size-4 shrink-0" strokeWidth={1.5} />
-              Connect to HMRC
-            </a>
-
-            <p className="mt-3 font-sans text-[10px] text-[#8a8a8a] sm:text-xs">
-              Same flow as Pulse — sends you to Government Gateway, then{" "}
-              <code className="text-[#c6c6c6]">/api/hmrc/callback</code>.
-            </p>
-
-            <a
-              href="/api/hmrc/authorize"
-              className="catalog-label mt-4 inline-flex min-h-10 items-center gap-2 text-[#c6c6c6] hover:text-[#e9c349]"
-            >
-              <RefreshCw className="size-4" strokeWidth={1.5} />
-              Retry OAuth
-            </a>
           </div>
-        </section>
-
-        <section
-          className="w-full max-w-lg px-1 text-center"
-          aria-labelledby="submit-hmrc-heading"
-        >
-          <h2
-            id="submit-hmrc-heading"
-            className="catalog-label text-[#e9c349]"
-          >
-            Submit to HMRC
-          </h2>
-          <p className="mt-2 font-sans text-xs text-[#c6c6c6] sm:text-sm">
-            Quarterly updates and final declaration will call MTD endpoints from
-            the server using your token — not wired in this demo build.
-          </p>
-          <button
-            type="button"
-            disabled
-            className="catalog-label mt-4 min-h-12 w-full cursor-not-allowed bg-[#FFFFFF]/40 px-4 py-3 text-[#0E0E0E]"
-          >
-            Submit to HMRC (next)
-          </button>
-        </section>
+        </div>
       </main>
+
+      <footer className="pointer-events-none shrink-0 py-6 text-center">
+        <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-[#99907c]/40">
+          Dylan Is Sabai • Pro-Studio ledger
+        </span>
+      </footer>
     </div>
   );
 }

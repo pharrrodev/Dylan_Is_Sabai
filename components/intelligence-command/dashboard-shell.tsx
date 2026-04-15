@@ -1,23 +1,32 @@
+import Link from "next/link";
+
 import { SidebarNav } from "@/components/intelligence-command/sidebar-nav";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-full min-h-0 w-full overflow-hidden bg-[#0E0E0E] text-[#FFFFFF]">
-      {/*
-        No-Line (design.md §2): no border-r — separation from main is tonal only.
-        Sidebar: surface_container_low (#1b1b1b). Brand slab: surface_container_lowest (#0e0e0e).
-        Token 16 / 5.5rem negative space replaces horizontal rules before nav.
-      */}
+    <div className="flex h-full min-h-0 w-full overflow-hidden bg-[#131313] text-[#e5e2e1]">
       <aside
-        className="flex h-full min-h-0 w-60 shrink-0 flex-col overflow-hidden bg-[#1B1B1B] py-8"
-        aria-label="Command navigation"
+        className="flex h-full min-h-0 w-64 shrink-0 flex-col overflow-hidden border-r border-[#4D4635]/15 bg-[#1c1b1b]"
+        aria-label="Pro-Studio navigation"
       >
-        <div className="bg-[#0E0E0E] px-4 py-6">
-          <p className="catalog-label text-[#e9c349]">Dylan Is Sabai</p>
-          <p className="catalog-label mt-3 text-[#c6c6c6]">LaaS</p>
+        <div className="px-6 py-8">
+          <p className="font-sans text-xl font-bold tracking-[-0.02em] text-[#e0ccab]">
+            PRO-STUDIO
+          </p>
+          <p className="mt-1 font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-[#99907c]">
+            Dylan Is Sabai
+          </p>
         </div>
-        <div className="min-h-0 flex-1 overflow-hidden px-0 pt-[5.5rem]">
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
           <SidebarNav />
+        </div>
+        <div className="mt-auto border-t border-[#4D4635]/10 p-6">
+          <Link
+            href="/ledger"
+            className="flex w-full items-center justify-center bg-[#e0ccab] py-3 font-sans text-xs font-bold uppercase tracking-widest text-[#3a2f18] transition-opacity hover:opacity-90"
+          >
+            Add entry
+          </Link>
         </div>
       </aside>
       <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">

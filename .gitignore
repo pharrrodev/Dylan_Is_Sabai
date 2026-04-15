@@ -20,6 +20,9 @@
 # production
 /build
 
+# Stitch / design reference exports (large PNGs; UI ported into components)
+stitch_pro_studio_ledger/
+
 # misc
 .DS_Store
 *.pem

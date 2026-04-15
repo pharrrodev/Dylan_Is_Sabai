@@ -42,10 +42,11 @@ const EXPENSE_CATEGORIES = [
 ] as const;
 
 const QUICK_CHIPS = [
-  "Studio Session",
-  "New Plugin",
-  "Uber",
-  "Facebook Ads",
+  "Studio",
+  "Touring",
+  "Plugin",
+  "Legal",
+  "Marketing",
 ] as const;
 
 type AttachmentMeta = {
@@ -123,17 +124,21 @@ function parseAmount(raw: string): number | null {
   return Math.round(n * 100) / 100;
 }
 
-function formatLogDate(iso: string): string {
+function formatLedgerDayMonth(iso: string): { day: string; mon: string } {
   const [y, m, d] = iso.split("-").map(Number);
-  if (!y || !m || !d) return iso;
-  return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  if (!y || !m || !d) return { day: "—", mon: "" };
+  const dt = new Date(y, m - 1, d);
+  return {
+    day: String(dt.getDate()),
+    mon: dt.toLocaleDateString("en-GB", { month: "short" }).toUpperCase(),
+  };
 }
 
-export function LedgerCockpit() {
+export function LedgerCockpit({
+  searchFilter = "",
+}: {
+  searchFilter?: string;
+}) {
   const [entries, setEntries] = useState<LedgerEntry[]>(SEED_ENTRIES);
   const [kind, setKind] = useState<LedgerKind>("expense");
   const [category, setCategory] = useState<string>(EXPENSE_CATEGORIES[0].value);
@@ -159,6 +164,25 @@ export function LedgerCockpit() {
       t += e.kind === "income" ? e.amount : -e.amount;
     });
     return t;
+  }, [entries]);
+
+  const filteredEntries = useMemo(() => {
+    const q = searchFilter.trim().toLowerCase();
+    if (!q) return entries;
+    return entries.filter(
+      (e) =>
+        e.description.toLowerCase().includes(q) ||
+        e.categoryLabel.toLowerCase().includes(q)
+    );
+  }, [entries, searchFilter]);
+
+  const waveformEntryId = useMemo(() => {
+    let best: LedgerEntry | null = null;
+    for (const e of entries) {
+      if (e.kind !== "income") continue;
+      if (!best || e.amount > best.amount) best = e;
+    }
+    return best?.id ?? null;
   }, [entries]);
 
   const categoryOptions =
@@ -251,66 +275,103 @@ export function LedgerCockpit() {
 
   const preview = previewEntry?.attachment;
 
+  const WAVEFORM_HEIGHTS = [20, 40, 30, 60, 20, 80, 40, 90, 20, 50, 30, 10, 70, 40];
+
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden sm:gap-4">
-      {/* Top stats — Pharrrolyfe rail */}
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-4 overflow-hidden sm:gap-6">
       <div className="grid shrink-0 grid-cols-2 gap-3 sm:gap-4">
-        <div className="vault-glow-pill bg-[#0E0E0E] px-4 py-3 text-center shadow-[inset_0_2px_0_0_rgba(233,195,73,0.55)]">
-          <p className="catalog-label text-[#c6c6c6]">Running total</p>
+        <div className="border-b border-[#4d4635]/20 bg-[#1c1b1b] px-4 py-3 text-center">
+          <p className="font-sans text-[10px] font-bold uppercase tracking-widest text-[#d0c5af]">
+            Running total
+          </p>
           <p
             className={`mt-1 font-sans text-lg font-semibold tabular-nums sm:text-xl ${
-              netSigned >= 0 ? "text-[#4ade80]" : "text-[#f87171]"
+              netSigned >= 0 ? "text-[#e0ccab]" : "text-[#ffb4ab]"
             }`}
           >
             {formatGbp(netSigned)}
           </p>
         </div>
-        <div className="vault-glow-pill bg-[#0E0E0E] px-4 py-3 text-center shadow-[inset_0_2px_0_0_rgba(233,195,73,0.55)]">
-          <p className="catalog-label text-[#c6c6c6]">Spendable Cash</p>
-          <p className="mt-1 font-sans text-lg font-semibold tabular-nums text-[#e9c349] sm:text-xl">
+        <div className="border-b border-[#4d4635]/20 bg-[#1c1b1b] px-4 py-3 text-center">
+          <p className="font-sans text-[10px] font-bold uppercase tracking-widest text-[#d0c5af]">
+            Spendable Cash
+          </p>
+          <p className="mt-1 font-sans text-lg font-semibold tabular-nums text-[#e0ccab] sm:text-xl">
             {spendable}
           </p>
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-12 gap-4 overflow-hidden lg:gap-6">
-        {/* Recent Log */}
-        <div className="col-span-12 flex min-h-0 flex-col lg:col-span-7">
-          <div
-            className="vault-glow-card flex min-h-0 flex-1 flex-col overflow-hidden bg-[#141414] shadow-[inset_0_2px_0_0_rgba(233,195,73,0.65)]"
-          >
-            <div className="flex shrink-0 flex-wrap items-center gap-3 px-4 pb-3 pt-4 sm:px-5 sm:pt-5">
-              <h2 className="editorial-serif-headline text-xl text-[#e9c349] sm:text-2xl">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 overflow-hidden lg:grid-cols-12 lg:gap-8">
+        <div className="flex min-h-0 flex-col lg:col-span-7">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="font-sans text-2xl font-bold tracking-tight text-[#e5e2e1]">
                 Recent Log
               </h2>
-              <span className="catalog-label shadow-[0_0_0_0.5px_#e9c349] bg-transparent px-2 py-1 text-[#e9c349]">
-                Live
-              </span>
+              <p className="mt-1 font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]">
+                Real-time financial telemetry
+              </p>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 sm:px-4">
-              <ul className="flex flex-col gap-3">
-                {entries.map((entry) => (
+            <span className="font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]">
+              Live sync
+            </span>
+          </div>
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+            <ul className="flex flex-col gap-4">
+              {filteredEntries.map((entry) => {
+                const dm = formatLedgerDayMonth(entry.dateIso);
+                const showWave = entry.id === waveformEntryId;
+                return (
                   <li key={entry.id}>
-                    <div className="flex flex-col gap-2 bg-[#0E0E0E] px-4 py-3 shadow-[inset_0_0_0_0.5px_rgba(233,195,73,0.12)] sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-sans text-sm font-medium text-[#FFFFFF] sm:text-base">
-                          {entry.description}
-                        </p>
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <span className="font-sans text-xs text-[#c6c6c6]">
-                            {formatLogDate(entry.dateIso)}
+                    <div
+                      className={`relative flex flex-col gap-3 bg-[#1c1b1b] p-5 transition-colors duration-300 hover:bg-[#393939] sm:flex-row sm:items-center sm:justify-between ${
+                        showWave ? "overflow-hidden" : ""
+                      }`}
+                    >
+                      {showWave ? (
+                        <div
+                          className="pointer-events-none absolute inset-0 flex items-end justify-center gap-0.5 px-8 pb-4 opacity-10"
+                          aria-hidden
+                        >
+                          {WAVEFORM_HEIGHTS.map((h, i) => (
+                            <div
+                              key={i}
+                              className="w-0.5 bg-[#e0ccab]"
+                              style={{ height: `${h * 0.32}px` }}
+                            />
+                          ))}
+                        </div>
+                      ) : null}
+                      <div className="relative z-[1] flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+                        <div className="flex shrink-0 flex-col items-center text-center sm:w-12">
+                          <span className="font-sans text-xs font-bold text-[#e5e2e1]">
+                            {dm.day}
                           </span>
-                          <span className="catalog-label shadow-[0_0_0_0.5px_#e9c349] px-2 py-0.5 text-[10px] text-[#e9c349] sm:text-xs">
-                            {entry.categoryLabel}
+                          <span className="font-sans text-[9px] font-bold uppercase tracking-tighter text-[#99907c]">
+                            {dm.mon}
                           </span>
                         </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-sans text-sm font-medium tracking-tight text-[#e5e2e1]">
+                            {entry.description}
+                          </h3>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                            <span className="bg-[#353534] px-2 py-0.5 font-sans text-[9px] font-bold uppercase tracking-widest text-[#e0ccab]">
+                              {entry.categoryLabel}
+                            </span>
+                            <span className="font-sans text-[9px] font-semibold uppercase tracking-widest text-[#99907c]">
+                              {entry.kind === "income" ? "Income" : "Expense"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
+                      <div className="relative z-[1] flex shrink-0 items-center justify-between gap-4 sm:flex-col sm:items-end sm:justify-center">
                         <span
-                          className={`font-sans text-base font-semibold tabular-nums sm:text-lg ${
+                          className={`font-sans text-sm font-bold tabular-nums ${
                             entry.kind === "income"
-                              ? "text-[#4ade80]"
-                              : "text-[#f87171]"
+                              ? "text-[#e0ccab]"
+                              : "text-[#ffb4ab]"
                           }`}
                         >
                           {entry.kind === "income" ? "+" : "−"}
@@ -321,7 +382,7 @@ export function LedgerCockpit() {
                             <button
                               type="button"
                               onClick={() => openPreview(entry)}
-                              className="flex size-9 items-center justify-center text-[#e9c349] hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e9c349]/40"
+                              className="flex size-9 items-center justify-center text-[#e0ccab] hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e0ccab]/40"
                               aria-label="View attachment"
                             >
                               <Paperclip className="size-4" strokeWidth={1.5} />
@@ -332,7 +393,7 @@ export function LedgerCockpit() {
                           <button
                             type="button"
                             onClick={() => removeEntry(entry.id)}
-                            className="flex size-9 items-center justify-center text-[#c6c6c6] hover:text-[#f87171] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f87171]/40"
+                            className="flex size-9 items-center justify-center text-[#99907c] hover:text-[#ffb4ab] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffb4ab]/40"
                             aria-label="Remove entry"
                           >
                             <Trash2 className="size-4" strokeWidth={1.5} />
@@ -341,137 +402,126 @@ export function LedgerCockpit() {
                       </div>
                     </div>
                   </li>
-                ))}
-              </ul>
-            </div>
+                );
+              })}
+            </ul>
           </div>
         </div>
 
-        {/* Add Entry */}
-        <div className="col-span-12 flex min-h-0 flex-col lg:col-span-5">
-          <div
-            className="vault-glow-card flex min-h-0 flex-1 flex-col overflow-hidden bg-[#0E0E0E] shadow-[inset_0_2px_0_0_rgba(233,195,73,0.65)]"
-          >
-            <div className="shrink-0 px-4 pb-3 pt-4 sm:px-5 sm:pt-5">
-              <h2 className="catalog-label text-[#e9c349]">+ Add Entry</h2>
+        <div className="flex min-h-0 flex-col lg:col-span-5">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#1c1b1b] lg:sticky lg:top-0 lg:max-h-[calc(100dvh-8rem)]">
+            <div className="shrink-0 p-6 pb-2 sm:p-8 sm:pb-2">
+              <h2 className="font-sans text-xl font-bold tracking-tight text-[#e0ccab]">
+                Add Entry
+              </h2>
+              <p className="mt-1 font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]">
+                Financial input interface
+              </p>
             </div>
-
-            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 sm:px-5">
-              <div className="flex shrink-0 gap-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (kind === "income") return;
-                    setKind("income");
-                    setCategory(INCOME_CATEGORIES[0].value);
-                  }}
-                  className={`min-h-11 flex-1 font-sans text-xs font-semibold uppercase tracking-wide transition-colors sm:text-sm ${
-                    kind === "income"
-                      ? "bg-[#142818] text-[#4ade80] shadow-[inset_0_0_0_0.5px_rgba(74,222,128,0.35)]"
-                      : "bg-[#131313] text-[#c6c6c6] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.06)]"
-                  }`}
-                >
-                  Income
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (kind === "expense") return;
-                    setKind("expense");
-                    setCategory(EXPENSE_CATEGORIES[0].value);
-                  }}
-                  className={`min-h-11 flex-1 font-sans text-xs font-semibold uppercase tracking-wide transition-colors sm:text-sm ${
-                    kind === "expense"
-                      ? "bg-[#3a1215] text-[#FFFFFF] shadow-[inset_0_0_0_0.5px_rgba(248,113,113,0.35)]"
-                      : "bg-[#131313] text-[#c6c6c6] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.06)]"
-                  }`}
-                >
-                  Expense
-                </button>
-              </div>
-
-              <div className="flex shrink-0 flex-col gap-2">
-                <p className="catalog-label text-[#e9c349]">Quick chips</p>
-                <div className="flex flex-wrap gap-2">
-                  {QUICK_CHIPS.map((chip) => (
-                    <button
-                      key={chip}
-                      type="button"
-                      onClick={() => applyChip(chip)}
-                      className="catalog-label bg-transparent px-3 py-2 text-[#e9c349] shadow-[0_0_0_0.5px_#e9c349] transition-colors hover:bg-[#e9c349]/10"
-                    >
-                      {chip}
-                    </button>
-                  ))}
+            <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 pb-6 sm:px-8 sm:pb-8">
+              <div>
+                <label className="mb-3 block font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]">
+                  Transaction type
+                </label>
+                <div className="grid grid-cols-2 border border-[#4d4635]/10 bg-[#0e0e0e] p-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (kind === "income") return;
+                      setKind("income");
+                      setCategory(INCOME_CATEGORIES[0].value);
+                    }}
+                    className={`py-2 font-sans text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                      kind === "income"
+                        ? "bg-[#2a2a2a] text-[#e0ccab]"
+                        : "text-[#99907c] hover:text-[#e5e2e1]"
+                    }`}
+                  >
+                    Income
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (kind === "expense") return;
+                      setKind("expense");
+                      setCategory(EXPENSE_CATEGORIES[0].value);
+                    }}
+                    className={`py-2 font-sans text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                      kind === "expense"
+                        ? "bg-[#2a2a2a] text-[#e0ccab]"
+                        : "text-[#99907c] hover:text-[#e5e2e1]"
+                    }`}
+                  >
+                    Expense
+                  </button>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div>
+                <label
+                  htmlFor={amountId}
+                  className="mb-2 block font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]"
+                >
+                  Amount (GBP)
+                </label>
+                <div className="relative border-b border-[#4d4635]/30 focus-within:border-[#e0ccab]">
+                  <span className="absolute bottom-3 left-0 font-sans text-2xl font-bold text-[#e0ccab]">
+                    £
+                  </span>
+                  <input
+                    id={amountId}
+                    type="text"
+                    inputMode="decimal"
+                    value={amountInput}
+                    onChange={(e) => setAmountInput(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full border-0 bg-transparent py-3 pl-8 font-sans text-2xl font-bold tracking-tight text-[#e5e2e1] outline-none placeholder:text-[#4d4635]/40 focus:ring-0"
+                  />
+                </div>
+              </div>
+
+              <div>
                 <label
                   htmlFor={descId}
-                  className="catalog-label text-[#e9c349]"
+                  className="mb-2 block font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]"
                 >
-                  Description
+                  Reference / entity
                 </label>
                 <input
                   id={descId}
                   type="text"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="What was this?"
-                  className="min-h-11 w-full border-0 bg-[#131313] px-3 py-2 font-sans text-sm text-[#FFFFFF] outline-none placeholder:text-[#c6c6c6]/35 focus-visible:ring-2 focus-visible:ring-[#e9c349]/40"
+                  placeholder="E.g. Beatport settlement"
+                  className="w-full border-0 border-b border-[#4d4635]/30 bg-transparent py-2 font-sans text-xs font-semibold uppercase tracking-widest text-[#e5e2e1] outline-none placeholder:text-[#4d4635]/40 focus:border-[#e0ccab] focus:ring-0"
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="flex flex-col gap-1">
-                  <label
-                    htmlFor={amountId}
-                    className="catalog-label text-[#e9c349]"
-                  >
-                    Amount
-                  </label>
-                  <div className="flex min-h-11 items-center bg-[#131313] px-3 shadow-[inset_0_0_0_0.5px_rgba(233,195,73,0.25)]">
-                    <span className="mr-1 font-sans text-sm text-[#e9c349]">
-                      £
-                    </span>
-                    <input
-                      id={amountId}
-                      type="text"
-                      inputMode="decimal"
-                      value={amountInput}
-                      onChange={(e) => setAmountInput(e.target.value)}
-                      placeholder="0.00"
-                      className="min-w-0 flex-1 border-0 bg-transparent py-2 font-sans text-sm tabular-nums text-[#FFFFFF] outline-none placeholder:text-[#c6c6c6]/35"
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label
-                    htmlFor={catId}
-                    className="catalog-label text-[#e9c349]"
-                  >
-                    Category
-                  </label>
-                  <select
-                    id={catId}
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="min-h-11 w-full cursor-pointer border-0 bg-[#131313] px-3 font-sans text-sm text-[#FFFFFF] outline-none shadow-[inset_0_0_0_0.5px_rgba(233,195,73,0.25)] focus-visible:ring-2 focus-visible:ring-[#e9c349]/40"
-                  >
-                    {categoryOptions.map((c) => (
-                      <option key={c.value} value={c.value}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label
+                  htmlFor={catId}
+                  className="mb-2 block font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]"
+                >
+                  Category
+                </label>
+                <select
+                  id={catId}
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full cursor-pointer border-0 border-b border-[#4d4635]/30 bg-[#0e0e0e] px-0 py-2 font-sans text-xs text-[#e5e2e1] outline-none focus:border-[#e0ccab] focus:ring-0"
+                >
+                  {categoryOptions.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div>
                 <label
                   htmlFor={dateId}
-                  className="catalog-label text-[#e9c349]"
+                  className="mb-2 block font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]"
                 >
                   Date
                 </label>
@@ -480,8 +530,26 @@ export function LedgerCockpit() {
                   type="date"
                   value={dateInput}
                   onChange={(e) => setDateInput(e.target.value)}
-                  className="min-h-11 w-full border-0 bg-[#131313] px-3 font-sans text-sm text-[#FFFFFF] outline-none shadow-[inset_0_0_0_0.5px_rgba(233,195,73,0.25)] focus-visible:ring-2 focus-visible:ring-[#e9c349]/40"
+                  className="w-full border-0 border-b border-[#4d4635]/30 bg-[#0e0e0e] py-2 font-sans text-xs text-[#e5e2e1] outline-none focus:border-[#e0ccab] focus:ring-0"
                 />
+              </div>
+
+              <div>
+                <label className="mb-3 block font-sans text-[10px] font-semibold uppercase tracking-widest text-[#99907c]">
+                  Quick categories
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {QUICK_CHIPS.map((chip) => (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => applyChip(chip)}
+                      className="border border-[#4d4635]/20 px-3 py-1.5 font-sans text-[9px] font-bold uppercase tracking-widest text-[#e5e2e1] transition-all duration-200 hover:bg-[#e0ccab] hover:text-[#3a2f18]"
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <input
@@ -494,7 +562,7 @@ export function LedgerCockpit() {
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="flex min-h-10 shrink-0 items-center gap-2 self-start font-sans text-xs text-[#e9c349] hover:underline sm:text-sm"
+                className="flex min-h-10 shrink-0 items-center gap-2 self-start font-sans text-xs text-[#e0ccab] hover:underline"
               >
                 <Paperclip className="size-4" strokeWidth={1.5} />
                 {pendingFile ? pendingFile.name : "Attach proof (optional)"}
@@ -503,10 +571,22 @@ export function LedgerCockpit() {
               <button
                 type="button"
                 onClick={logEntry}
-                className="mt-auto min-h-12 w-full shrink-0 bg-[#e9c349] font-sans text-sm font-bold uppercase tracking-[0.14em] text-[#241a00] transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e9c349] sm:min-h-14 sm:text-base"
+                className="mt-auto flex min-h-12 w-full shrink-0 items-center justify-center gap-2 bg-[#e0ccab] font-sans text-xs font-bold uppercase tracking-[0.2em] text-[#3a2f18] transition-all hover:bg-[#c3b191] active:scale-[0.98]"
               >
-                Log Entry +
+                <span>Log entry</span>
               </button>
+
+              <div className="border-l-2 border-[#e0ccab]/20 bg-[#0e0e0e] p-4">
+                <div className="flex items-start gap-3">
+                  <span className="font-sans text-sm text-[#e0ccab]" aria-hidden>
+                    ℹ
+                  </span>
+                  <p className="font-sans text-[10px] leading-relaxed text-[#d0c5af]">
+                    Data integrity: entries stay in your session for this demo;
+                    production will sync to your vault after HMRC consent.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -520,15 +600,17 @@ export function LedgerCockpit() {
           onClick={() => setPreviewEntry(null)}
         >
           <div
-            className="vault-glow-card flex max-h-[85dvh] w-full max-w-lg flex-col overflow-hidden p-4"
+            className="flex max-h-[85dvh] w-full max-w-lg flex-col overflow-hidden border border-[#4d4635]/15 bg-[#1c1b1b] p-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-2 flex justify-between gap-3">
-              <p className="catalog-label text-[#e9c349]">Proof</p>
+              <p className="font-sans text-[10px] font-bold uppercase tracking-widest text-[#e0ccab]">
+                Proof
+              </p>
               <button
                 type="button"
                 onClick={() => setPreviewEntry(null)}
-                className="catalog-label text-[#c6c6c6] hover:text-[#FFFFFF]"
+                className="font-sans text-[10px] font-bold uppercase tracking-widest text-[#d0c5af] hover:text-[#e5e2e1]"
               >
                 Close
               </button>
